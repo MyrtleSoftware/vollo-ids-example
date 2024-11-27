@@ -1,0 +1,7 @@
+kagglehub
+pandas
+scikit-learn
+keras
+tensorflow[and-cuda]
+pydot
+
