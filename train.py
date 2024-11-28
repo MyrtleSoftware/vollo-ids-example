@@ -14,6 +14,10 @@ from keras.layers import Dense, Dropout, Conv1D, MaxPooling1D, Flatten, LSTM, GR
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import plot_model
 
+
+# ================================
+
+
 print("Loading dataset...")
 
 keys = ["train", "val", "test"]
@@ -64,9 +68,8 @@ def cnn_lstm_gru_model(input_shape, num_classes):
 
     model = Sequential(
         [
-            Conv1D(
-                filters=32, kernel_size=3, activation="relu", input_shape=input_shape
-            ),
+            Input(shape=input_shape),
+            Conv1D(filters=32, kernel_size=3, activation="relu"),
             MaxPooling1D(pool_size=2),
             Conv1D(filters=64, kernel_size=3, activation="relu"),
             MaxPooling1D(pool_size=2),
@@ -79,21 +82,8 @@ def cnn_lstm_gru_model(input_shape, num_classes):
         ]
     )
 
-    # MLP
-    model = Sequential(
-        [
-            Input(shape=input_shape),
-            Dense(128, activation="relu"),
-            Dropout(0.5),
-            Dense(64, activation="relu"),
-            Dropout(0.5),
-            Dense(32, activation="relu"),
-            Dropout(0.5),
-            Dense(num_classes, activation="sigmoid"),
-        ]
-    )
-
     model.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
+
     return model
 
 
@@ -125,8 +115,8 @@ loss, accuracy = model.evaluate(X["test"], Y["test"], batch_size=128)
 # Record the ending time for testing
 test_end_time = time.time()
 
-print(f"Test Loss: {loss:.4f}")
-print(f"Test Accuracy: {accuracy:.4f}")
+print(f"Test Loss: {loss:.5f}")
+print(f"Test Accuracy: {accuracy:.5f}")
 
 # Calculate and print the training time
 train_time = train_end_time - train_start_time
