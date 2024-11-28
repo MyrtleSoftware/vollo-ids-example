@@ -1,9 +1,7 @@
 import kagglehub
 import os
 import pandas as pd
-import numpy as np
 
-from sklearn.utils import shuffle
 from hashlib import md5
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
@@ -14,11 +12,13 @@ path = kagglehub.dataset_download(
     "mohamedamineferrag/edgeiiotset-cyber-security-dataset-of-iot-iiot"
 )
 
+
 print("Loading dataset...")
 
 path = os.path.join(
     path, "Edge-IIoTset dataset/Selected dataset for ML and DL/DNN-EdgeIIoT-dataset.csv"
 )
+
 
 df = pd.read_csv(path, low_memory=False)
 
@@ -84,6 +84,10 @@ def find_identical_columns_by_hash(df):
 # Applying the function to the DataFrame
 identical_column_groups = find_identical_columns_by_hash(df)
 
+# Sort by time for dev/test splits later
+df = df.sort_values("frame.time")
+
+
 print("Dropping columns...")
 
 print("Groups of identical columns:")
@@ -112,7 +116,7 @@ df.drop(drop_columns, axis=1, inplace=True)
 df.dropna(axis=0, how="any", inplace=True)
 df.drop_duplicates(subset=None, keep="first", inplace=True)
 
-df.info()
+# df.info()
 
 print(df["Attack_type"].value_counts())
 
@@ -120,9 +124,28 @@ print(df["Attack_type"].value_counts())
 
 print("Making splits...")
 
-f_train, f_test = train_test_split(df, test_size=0.2, random_state=42)
-f_train, f_val = train_test_split(f_train, test_size=0.125, random_state=42**2)
+# 70/10/20 splits in the time domain
 
-f_train.to_csv("train.csv", index=False)
-f_test.to_csv("test.csv", index=False)
-f_val.to_csv("val.csv", index=False)
+n = len(df) // 10
+
+train = df[: 7 * n]
+dev = df[7 * n : 8 * n]
+test = df[8 * n :]
+
+print("\nTrain")
+print(train["Attack_type"].value_counts())
+print("\nDev")
+print(dev["Attack_type"].value_counts())
+print("\nTest")
+print(test["Attack_type"].value_counts())
+
+
+print("Saving splits...")
+
+train.to_csv("train.csv", index=False)
+dev.to_csv("dev.csv", index=False)
+test.to_csv("test.csv", index=False)
+
+train.to_pickle("train.pkl")
+dev.to_pickle("dev.pkl")
+test.to_pickle("test.pkl")
