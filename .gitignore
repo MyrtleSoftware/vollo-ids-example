@@ -1,4 +1,7 @@
+__pycache__/
 vollo/
+vollo-sdk-*/
+build/
 *.csv
 *.png
 *.pkl

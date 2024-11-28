@@ -2,6 +2,7 @@ kagglehub
 pandas
 scikit-learn
 keras
-tensorflow[and-cuda]
+# tensorflow[and-cuda]
 pydot
-
+--index-url https://download.pytorch.org/whl/cu121
+torch

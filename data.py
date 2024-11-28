@@ -4,7 +4,7 @@ import pandas as pd
 
 from hashlib import md5
 from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split
+
 
 print("Downloading dataset...")
 
@@ -120,11 +120,7 @@ df.drop(drop_columns, axis=1, inplace=True)
 df.dropna(axis=0, how="any", inplace=True)
 df.drop_duplicates(subset=None, keep="first", inplace=True)
 
-# df.info()
-
 print(df["Attack_type"].value_counts())
-
-# df.to_csv("Edge-IIoT.csv", index=False)
 
 print("Making splits...")
 
@@ -146,10 +142,13 @@ print(test["Attack_type"].value_counts())
 
 print("Saving splits...")
 
-train.to_csv("train.csv", index=False)
-dev.to_csv("dev.csv", index=False)
-test.to_csv("test.csv", index=False)
+if not os.path.exists("build"):
+    os.makedirs("build")
 
-train.to_pickle("train.pkl")
-dev.to_pickle("dev.pkl")
-test.to_pickle("test.pkl")
+train.to_csv("build/train.csv", index=False)
+dev.to_csv("build/dev.csv", index=False)
+test.to_csv("build/test.csv", index=False)
+
+train.to_pickle("build/train.pkl")
+dev.to_pickle("build/dev.pkl")
+test.to_pickle("build/test.pkl")

@@ -14,6 +14,7 @@ from keras.layers import Dense, Dropout, Conv1D, MaxPooling1D, Flatten, LSTM, GR
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.utils import plot_model
 
+import tensorflow as tf
 
 # ================================
 
@@ -53,11 +54,6 @@ for k in keys:
     Y[k] = splits[k]["Attack_label"]
 
 
-# scaler = StandardScaler().fit(X["train"])
-
-# for k in keys:
-#     X[k] = scaler.transform(X[k])
-
 for k, v in X.items():
     print(k, v.shape)
 
@@ -69,10 +65,12 @@ def cnn_lstm_gru_model(input_shape, num_classes):
     model = Sequential(
         [
             Input(shape=input_shape),
-            Conv1D(filters=32, kernel_size=3, activation="relu"),
-            MaxPooling1D(pool_size=2),
-            Conv1D(filters=64, kernel_size=3, activation="relu"),
-            MaxPooling1D(pool_size=2),
+            Conv1D(
+                filters=32, kernel_size=3, activation="relu", strides=2, use_bias=False
+            ),
+            Conv1D(
+                filters=64, kernel_size=3, activation="relu", strides=2, use_bias=False
+            ),
             LSTM(64, return_sequences=True),
             LSTM(64, return_sequences=False),
             Flatten(),
@@ -82,7 +80,17 @@ def cnn_lstm_gru_model(input_shape, num_classes):
         ]
     )
 
-    model.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
+    model.compile(
+        optimizer="adam",
+        loss="binary_crossentropy",
+        metrics=[
+            "Accuracy",
+            "FalseNegatives",
+            "TrueNegatives",
+            "FalsePositives",
+            "TruePositives",
+        ],
+    )
 
     return model
 
@@ -93,10 +101,8 @@ model = cnn_lstm_gru_model(input_shape, num_classes)
 model.summary()
 # plot_model(model)
 
-## Train model
+print(X["train"])
 
-
-train_start_time = time.time()
 # Train the model
 history = model.fit(
     X["train"],
@@ -105,23 +111,28 @@ history = model.fit(
     epochs=2,
     batch_size=1024,
 )
-# Record the ending time
-train_end_time = time.time()
+
 
 # Record the starting time for testing
 test_start_time = time.time()
 # Evaluate the model
-loss, accuracy = model.evaluate(X["test"], Y["test"], batch_size=128)
+loss, accuracy, fn, tn, fp, tp = model.evaluate(X["test"], Y["test"], batch_size=128)
 # Record the ending time for testing
 test_end_time = time.time()
 
 print(f"Test Loss: {loss:.5f}")
+
 print(f"Test Accuracy: {accuracy:.5f}")
 
-# Calculate and print the training time
-train_time = train_end_time - train_start_time
-print(f"Training time: {train_time:.2f} seconds")
+print(f"False Negatives: {fn:.5f}")
+print(f"True Negatives: {tn:.5f}")
+print(f"False Positives: {fp:.5f}")
+print(f"True Positives: {tp:.5f}")
 
-# Calculate and print the testing time
-test_time = test_end_time - test_start_time
-print(f"Testing time: {test_time:.2f} seconds")
+precision = tp / (tp + fp)
+recall = tp / (tp + fn)
+f1 = 2 * (precision * recall) / (precision + recall)
+
+print(f"Precision: {precision:.5f}")
+print(f"Recall: {recall:.5f}")
+print(f"F1 Score: {f1:.5f}")
