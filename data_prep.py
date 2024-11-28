@@ -29,6 +29,7 @@ for col in df.columns:
 
 print("Encoding categorical features...")
 
+
 keys = [
     "http.request.method",
     "http.referer",
@@ -100,17 +101,20 @@ drop_columns = [
     "frame.time",
     "ip.src_host",
     "ip.dst_host",
-    "arp.dst.proto_ipv4",
     "arp.src.proto_ipv4",
+    "arp.dst.proto_ipv4",
     "http.file_data",
-    "http.request.uri.query",
     "http.request.full_uri",
+    "icmp.transmit_timestamp",
+    "http.request.uri.query",
     "tcp.options",
     "tcp.payload",
     "tcp.srcport",
+    "tcp.dstport",
+    "udp.port",
     "mqtt.msg",
-    "icmp.unused",
 ]
+
 
 df.drop(drop_columns, axis=1, inplace=True)
 df.dropna(axis=0, how="any", inplace=True)
