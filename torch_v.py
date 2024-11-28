@@ -20,7 +20,7 @@ class Net(nn.Module):
             nn.ReLU(),
         )
 
-        # self.lstm = nn.LSTM(input_size=64, hidden_size=64, num_layers=2)
+        self.lstm = nn.LSTM(input_size=64, hidden_size=64, num_layers=2)
 
         self.dense = nn.Sequential(
             nn.Linear(64, 128),
@@ -36,12 +36,12 @@ class Net(nn.Module):
 
         x = x.transpose(1, 2)  #  [B,  1, 90]
         x = self.conv(x)  #       [B, 64, 21]
-        # x = x.permute(2, 0, 1)  # [21, B, 64]
-        # x, _ = self.lstm(x)  #    [21, B, 64]
-        # x = x.permute(1, 2, 0)  # [B, 64, 21]
+
+        x = x.permute(2, 0, 1)  # [21, B, 64]
+        x, _ = self.lstm(x)  #    [21, B, 64]
 
         # Take last element in the "time" dimension
-        x = x[:, :, -1]  #   [B, 64]
+        x = x[-1, :, :]  #   [B, 64]
         x = self.dense(x)  # [B, 1]
 
         return x
@@ -53,7 +53,7 @@ class DataLoader:
         self.batch_size = bath_size
         self.device = device
 
-    def iter(self, split):
+    def iter(self, split, drop_last=True):
 
         x = self.X[split].to_numpy()
         y = self.Y[split].to_numpy()
@@ -71,7 +71,8 @@ class DataLoader:
         # Drop last elements so that the batch size divides evenly
         n = x.shape[0] // self.batch_size * self.batch_size
 
-        x, y = x[:n], y[:n]
+        x, x_rem = x[:n], x[n:]
+        y, y_rem = y[:n], y[n:]
 
         x = x.reshape(-1, self.batch_size, x.shape[1])
         y = y.reshape(-1, self.batch_size, y.shape[1])
@@ -80,6 +81,9 @@ class DataLoader:
 
         for xx, yy in zip(x, y):
             yield torch.tensor(xx, **kwargs), torch.tensor(yy, **kwargs)
+
+        if not drop_last:
+            yield torch.tensor(x_rem, **kwargs), torch.tensor(y_rem, **kwargs)
 
 
 # =================
@@ -124,12 +128,14 @@ def eval(iter):
     recall = tp / (tp + fn)
     f1 = 2 * (precision * recall) / (precision + recall)
 
+    t = tp + tn + fp + fn
+
     return {
         "accuracy": accuracy,
         "precision": precision,
         "recall": recall,
         "F1": f1,
-        "confusion_matrix": [[tp, fp], [fn, tn]],
+        "confusion_matrix": [[tp / t, fp / t], [fn / t, tn / t]],
     }
 
 
@@ -145,8 +151,8 @@ for _ in range(1):
         loss.backward()
         optimizer.step()
 
-    print("train set", eval(loader.iter("train")))
+    print("train set", eval(loader.iter("train", drop_last=False)))
 
-    print("dev set", eval(loader.iter("dev")))
+    print("dev set", eval(loader.iter("dev", drop_last=False)))
 
-print("test set", eval(loader.iter("test")))
+print("test set", eval(loader.iter("test", drop_last=False)))
