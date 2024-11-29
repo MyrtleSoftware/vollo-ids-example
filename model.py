@@ -9,39 +9,47 @@ import numpy as np
 from tqdm import tqdm
 
 
-class Net(nn.Module):
-    def __init__(self):
+class ResFFN(nn.Module):
+    def __init__(self, n: int):
         super().__init__()
 
-        self.conv = nn.Sequential(
-            nn.Conv1d(in_channels=1, out_channels=32, kernel_size=3),
-            nn.ReLU(),
-            nn.Conv1d(in_channels=32, out_channels=64, kernel_size=3),
-            nn.ReLU(),
-        )
+        self.lin = nn.Linear(n, 2 * n)
+        self.relu = nn.ReLU()
+        self.lin2 = nn.Linear(2 * n, n)
 
-        self.lstm = nn.LSTM(input_size=64, hidden_size=64, num_layers=2)
+    def forward(self, x):
 
-        self.dense = nn.Sequential(
-            nn.Linear(64, 128),
-            nn.ReLU(),
+        y = self.lin(x)
+        y = self.relu(y)
+        y = self.lin2(y)
+
+        return x + y
+
+
+class Net(nn.Module):
+    def __init__(self, input_size=95, hid: int = 128):
+
+        super().__init__()
+
+        self.bn = nn.BatchNorm1d(input_size)
+
+        self.pre = nn.Sequential(
+            nn.Linear(input_size, hid),
+            ResFFN(hid),
+            ResFFN(hid),
             nn.Dropout(0.5),
-            nn.Linear(128, 1),
+            nn.Linear(hid, 1),
             nn.Sigmoid(),
         )
 
     def forward(self, x):
 
-        # X: [B, 90, 1]
+        x = self.bn(x)
 
-        x = x.transpose(1, 2)  #  [B,  1, 90]
-        x = self.conv(x)  #       [B, 64, 21]
+        # X: [B, H, 1]
 
-        x = x.permute(2, 0, 1)  # [21, B, 64]
-        x, _ = self.lstm(x)  #    [21, B, 64]
+        x = self.pre(x.squeeze(2))
 
-        # Take last element in the "time" dimension
-        x = x[-1, :, :]  #   [B, 64]
-        x = self.dense(x)  # [B, 1]
+        # print(x.shape)
 
         return x

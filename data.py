@@ -80,6 +80,8 @@ df.drop_duplicates(subset=None, keep="first", inplace=True)
 
 print(df["Attack_type"].value_counts())
 
+print("Feature size:", len(df.columns) - 2)
+
 print("Making splits...")
 
 # 70/10/20 splits in the time domain

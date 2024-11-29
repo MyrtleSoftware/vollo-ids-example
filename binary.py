@@ -4,7 +4,10 @@ from tqdm import tqdm
 from model import Net
 
 
-def eval(iter):
+def eval(model, iter):
+
+    model.eval()
+
     tp = 0
     fp = 0
     tn = 0
@@ -28,6 +31,8 @@ def eval(iter):
     f1 = 2 * (precision * recall) / (precision + recall)
 
     t = tp + tn + fp + fn
+
+    model.train()
 
     return {
         "accuracy": accuracy,
@@ -57,8 +62,8 @@ optimizer = torch.optim.Adam(model.parameters())
 loader = DataLoader(device=device)
 
 
-for _ in range(1):
-    for x, y in tqdm(loader.iter("train"), leave=False):
+for i in range(2):
+    for x, y in (t := tqdm(loader.iter("train"), leave=False)):
 
         optimizer.zero_grad()
 
@@ -66,12 +71,24 @@ for _ in range(1):
         # The first column of y is attack/!attack
         loss = torch.nn.functional.binary_cross_entropy(logits, y[:, :1])
 
+        # print(loss.item())
+
         loss.backward()
         optimizer.step()
 
-    print("dev set", eval(loader.iter("dev", drop_last=False)))
+        t.set_description(f"Loss: {loss.item():.4f}")
 
-print("test set", eval(loader.iter("test", drop_last=False)))
+    print(f"Dev set - epoch {i}:")
+
+    for k, v in eval(model, loader.iter("dev", drop_last=False)).items():
+        print(f"\t{k}: {v}")
+
+
+print("Test set:")
+
+for k, v in eval(model, loader.iter("test", drop_last=False)).items():
+    print(f"\t{k}: {v}")
+
 
 # Save the model
 torch.save(model.state_dict(), "build/model.pt")
