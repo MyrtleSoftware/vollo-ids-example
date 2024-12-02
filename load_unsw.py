@@ -38,7 +38,7 @@ def must_norm(col):
 
 
 class DataLoader:
-    def __init__(self, batch_size=1024, device="cuda", W=100):
+    def __init__(self, batch_size=64, device="cuda", W=100):
 
         self.data = load()
         self.batch_size = batch_size
@@ -57,44 +57,37 @@ class DataLoader:
                         var[col] + 1e-6
                     ) ** 0.5
 
+        self.cache_x = {}
+        self.cache_y = {}
+
     def len(self, split):
         return self.data[split].shape[0] // self.batch_size // self.W
 
-    def iter(self, split, drop_last=True):
+    def iter(self, split, drop_last=True, W=None):
 
-        W = self.W
+        if W is None:
+            W = self.W
 
-        x = self.data[split].drop(columns=_LABELS).to_numpy()
-        y = self.data[split].loc[:, _LABELS].to_numpy()
+        if split in self.cache_x:
+            x = self.cache_x[split]
+        else:
+            x = self.data[split].drop(columns=_LABELS).to_numpy()
 
-        n = (x.shape[0] // W) * W
+        if split in self.cache_y:
+            y = self.cache_y[split]
+        else:
+            y = self.data[split].loc[:, _LABELS].to_numpy()
 
-        x = x[:n]
-        y = y[:n]
+        starts = np.random.randint(0, x.shape[0] - W, x.shape[0] // W)
 
-        x = x.reshape(-1, W, x.shape[-1])
-        y = y.reshape(-1, W, y.shape[-1])
+        x = np.stack([x[i : i + W] for i in starts], axis=0)
+        y = np.stack([y[i : i + W] for i in starts], axis=0)
 
-        # if len(x) > (n := self.batch_size * 100):
-        #     x = x[:n]
-        #     y = y[:n]
-
-        # # x = x[:10000]
-        # # y = y[:10000]
-
-        # x = np.stack([x[i : i - W] for i in range(W)], axis=1)
-        # y = np.stack([y[i : i - W] for i in range(W)], axis=1)
-
-        # print(x.shape)
-
-        # Shuffle in the first dimension
-
+        # Shuffle the sequences
         idx = np.random.permutation(x.shape[0])
 
         x = x[idx]
         y = y[idx]
-
-        # print(x.shape)
 
         # Drop last elements so that the batch size divides evenly
         n = (x.shape[0] // self.batch_size) * self.batch_size

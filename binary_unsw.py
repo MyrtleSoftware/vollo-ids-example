@@ -8,7 +8,7 @@ from model import Net
 
 
 @torch.no_grad()
-def eval(model, iter):
+def eval(model, iter, eps=1e-6):
 
     model.eval()
 
@@ -19,7 +19,7 @@ def eval(model, iter):
 
     for x, y in iter:
 
-        pred = model(x)
+        pred, _ = model(x)
 
         pred = pred > 0.5
         target = y[:, :, :1] > 0.5
@@ -29,12 +29,12 @@ def eval(model, iter):
         tn += (~pred & ~target).sum().item()
         fn += (~pred & target).sum().item()
 
-    accuracy = (tp + tn) / (tp + tn + fp + fn)
-    precision = tp / (tp + fp)
-    recall = tp / (tp + fn)
-    f1 = 2 * (precision * recall) / (precision + recall)
+    accuracy = (tp + tn) / (tp + tn + fp + fn + eps)
+    precision = tp / (tp + fp + eps)
+    recall = tp / (tp + fn + eps)
+    f1 = 2 * (precision * recall) / (precision + recall + eps)
 
-    t = tp + tn + fp + fn
+    t = tp + tn + fp + fn + eps
 
     model.train()
 
@@ -59,21 +59,21 @@ print(model)
 
 # =================
 
-optimizer = torch.optim.Adam(model.parameters())
+optimizer = torch.optim.AdamW(model.parameters())
 
 # =================
 
 loader = DataLoader(device=device)
 
 
-for i in range(100):
+for i in range(20):
     for x, y in (
         t := tqdm(loader.iter("train"), leave=False, total=loader.len("train"))
     ):
 
         optimizer.zero_grad()
 
-        logits = model(x)
+        logits, _ = model(x)
         # The first column of y is attack/!attack
         y = y[:, :, :1]
 
@@ -84,6 +84,9 @@ for i in range(100):
         loss.backward()
         optimizer.step()
 
+        # for p in optimizer.param_groups:
+        #     p["lr"] = p["lr"] * 0.99
+
         t.set_description(f"Loss: {loss.item():.4f}")
 
     print(f"Dev set - epoch {i}:")
@@ -93,8 +96,10 @@ for i in range(100):
 
 print("Test set:")
 
-for k, v in eval(model, loader.iter("test", drop_last=False)).items():
-    print(f"\t{k}: {v}")
+
+for w in [1, 10, 50, 100, 500, 1000]:
+    for k, v in eval(model, loader.iter("test", drop_last=False, W=w)).items():
+        print(f"\t{w:>4}: {k}: {v}")
 
 
 # Save the model
