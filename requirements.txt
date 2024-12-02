@@ -1,6 +1,7 @@
 kagglehub
 pandas
 scikit-learn
+pyarrow
 ./vollo-sdk-19.2.3/python/vollo_compiler-19.2.3-cp37-abi3-manylinux2014_x86_64.whl
 ./vollo-sdk-19.2.3/python/vollo_rt-19.2.3-py3-none-any.whl
 ./vollo-sdk-19.2.3/python/vollo_torch-19.2.3-py3-none-any.whl
