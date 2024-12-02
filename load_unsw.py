@@ -4,16 +4,16 @@ import torch
 import numpy as np
 import re
 
+_SPLITS = ["train", "dev", "test"]
+
+_LABELS = ["Label", "attack_cat"]
+
 
 def _load(csv_file: str, cache_file: str):
     if os.path.exists(cache_file):
         return pd.read_feather(cache_file)
     else:
         return pd.read_csv(csv_file, low_memory=False)
-
-
-_SPLITS = ["train", "dev", "test"]
-_LABELS = ["Label", "attack_cat"]
 
 
 def load(dir: str = "data/processed/"):

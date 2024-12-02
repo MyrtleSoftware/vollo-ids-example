@@ -34,7 +34,7 @@ def eval(model, iter, eps=1e-6):
     recall = tp / (tp + fn + eps)
     f1 = 2 * (precision * recall) / (precision + recall + eps)
 
-    t = tp + tn + fp + fn + eps
+    t = max(min(tp, tn, fp, fn), 1)
 
     model.train()
 
@@ -66,7 +66,7 @@ optimizer = torch.optim.AdamW(model.parameters())
 loader = DataLoader(device=device)
 
 
-for i in range(20):
+for i in range(10):
     for x, y in (
         t := tqdm(loader.iter("train"), leave=False, total=loader.len("train"))
     ):
@@ -97,7 +97,7 @@ for i in range(20):
 print("Test set:")
 
 
-for w in [1, 10, 50, 100, 500, 1000]:
+for w in [1, 10, 50, 100, 500, 1000, 10000]:
     for k, v in eval(model, loader.iter("test", drop_last=False, W=w)).items():
         print(f"\t{w:>4}: {k}: {v}")
 

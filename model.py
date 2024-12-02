@@ -15,10 +15,6 @@ class Net(nn.Module):
         )
 
         self.post = nn.Sequential(
-            # nn.Dropout(0.1),
-            # nn.Linear(hid, 2 * hid),
-            # nn.ReLU(),
-            # nn.Linear(2 * hid, 1),
             nn.Linear(hid, 1),
             nn.Sigmoid(),
         )
