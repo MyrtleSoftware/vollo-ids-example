@@ -14,7 +14,7 @@ class ResFFN(nn.Module):
         super().__init__()
 
         self.net = nn.Sequential(
-            nn.Dropout(0.5),
+            nn.Dropout(0.1),
             nn.Linear(n, 2 * n),
             nn.ReLU(),
             nn.Linear(2 * n, n),
@@ -25,7 +25,7 @@ class ResFFN(nn.Module):
 
 
 class Net(nn.Module):
-    def __init__(self, input_size=95, hid: int = 2):
+    def __init__(self, input_size=95, hid: int = 128):
 
         super().__init__()
 
