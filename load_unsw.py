@@ -38,11 +38,12 @@ def must_norm(col):
 
 
 class DataLoader:
-    def __init__(self, batch_size=1024, device="cuda"):
+    def __init__(self, batch_size=1024, device="cuda", W=100):
 
         self.data = load()
         self.batch_size = batch_size
         self.device = device
+        self.W = W
 
         # Normalize features to zero mean and unit variance
 
@@ -57,26 +58,32 @@ class DataLoader:
                     ) ** 0.5
 
     def len(self, split):
-        return self.data[split].shape[0] // self.batch_size
+        return self.data[split].shape[0] // self.batch_size // self.W
 
     def iter(self, split, drop_last=True):
 
-        W = 50
+        W = self.W
 
         x = self.data[split].drop(columns=_LABELS).to_numpy()
         y = self.data[split].loc[:, _LABELS].to_numpy()
 
-        if len(x) > (n := self.batch_size * 300):
-            x = x[:n]
-            y = y[:n]
+        n = (x.shape[0] // W) * W
 
-        # x = x[:10000]
-        # y = y[:10000]
+        x = x[:n]
+        y = y[:n]
 
-        # print(x.shape)
+        x = x.reshape(-1, W, x.shape[-1])
+        y = y.reshape(-1, W, y.shape[-1])
 
-        x = np.stack([x[i : i - W] for i in range(W)], axis=1)
-        y = np.stack([y[i : i - W] for i in range(W)], axis=1)
+        # if len(x) > (n := self.batch_size * 100):
+        #     x = x[:n]
+        #     y = y[:n]
+
+        # # x = x[:10000]
+        # # y = y[:10000]
+
+        # x = np.stack([x[i : i - W] for i in range(W)], axis=1)
+        # y = np.stack([y[i : i - W] for i in range(W)], axis=1)
 
         # print(x.shape)
 

@@ -35,13 +35,12 @@ class Net(nn.Module):
         )
 
         self.lstm = nn.LSTM(
-            input_size=hid, hidden_size=2 * hid, num_layers=1, batch_first=True
+            input_size=hid, hidden_size=hid, num_layers=1, batch_first=True
         )
 
         self.post = nn.Sequential(
-            # ResFFN(hid),
-            nn.Linear(2 * hid, 1),
-            nn.Dropout(0.2),
+            ResFFN(hid),
+            nn.Linear(hid, 1),
             nn.Sigmoid(),
         )
 
@@ -55,7 +54,6 @@ class Net(nn.Module):
 
         x = self.pre(x)
         x, _ = self.lstm(x)
-        x = x[:, :, :]  # Last time step
         x = self.post(x)
 
         # print(x.shape)

@@ -66,7 +66,7 @@ optimizer = torch.optim.Adam(model.parameters())
 loader = DataLoader(device=device)
 
 
-for i in range(10):
+for i in range(100):
     for x, y in (
         t := tqdm(loader.iter("train"), leave=False, total=loader.len("train"))
     ):
