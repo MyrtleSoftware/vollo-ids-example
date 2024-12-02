@@ -29,23 +29,34 @@ class Net(nn.Module):
 
         super().__init__()
 
-        # self.bn = nn.BatchNorm1d(input_size)
-
         self.pre = nn.Sequential(
             nn.Linear(input_size, hid),
             ResFFN(hid),
-            ResFFN(hid),
-            nn.Linear(hid, 1),
+        )
+
+        self.lstm = nn.LSTM(
+            input_size=hid, hidden_size=2 * hid, num_layers=1, batch_first=True
+        )
+
+        self.post = nn.Sequential(
+            # ResFFN(hid),
+            nn.Linear(2 * hid, 1),
+            nn.Dropout(0.2),
             nn.Sigmoid(),
         )
 
     def forward(self, x):
 
+        # print(x.shape)
+
         # x = self.bn(x)
 
         # X: [B, H, 1]
 
-        x = self.pre(x.squeeze(2))
+        x = self.pre(x)
+        x, _ = self.lstm(x)
+        x = x[:, :, :]  # Last time step
+        x = self.post(x)
 
         # print(x.shape)
 

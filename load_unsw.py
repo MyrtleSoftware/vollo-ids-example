@@ -50,29 +50,53 @@ class DataLoader:
         var = self.data["train"].var()
 
         for split in self.data:
-
             for col in self.data[split]:
                 if must_norm(col):
                     self.data[split][col] = (self.data[split][col] - mean[col]) / (
                         var[col] + 1e-6
                     ) ** 0.5
 
+    def len(self, split):
+        return self.data[split].shape[0] // self.batch_size
+
     def iter(self, split, drop_last=True):
 
-        # Shuffle the row order
-        xy = self.data[split].sample(frac=1)
+        W = 50
 
-        x = xy.drop(columns=_LABELS).to_numpy()
-        y = xy.loc[:, _LABELS].to_numpy()
+        x = self.data[split].drop(columns=_LABELS).to_numpy()
+        y = self.data[split].loc[:, _LABELS].to_numpy()
+
+        if len(x) > (n := self.batch_size * 300):
+            x = x[:n]
+            y = y[:n]
+
+        # x = x[:10000]
+        # y = y[:10000]
+
+        # print(x.shape)
+
+        x = np.stack([x[i : i - W] for i in range(W)], axis=1)
+        y = np.stack([y[i : i - W] for i in range(W)], axis=1)
+
+        # print(x.shape)
+
+        # Shuffle in the first dimension
+
+        idx = np.random.permutation(x.shape[0])
+
+        x = x[idx]
+        y = y[idx]
+
+        # print(x.shape)
 
         # Drop last elements so that the batch size divides evenly
-        n = x.shape[0] // self.batch_size * self.batch_size
+        n = (x.shape[0] // self.batch_size) * self.batch_size
 
         x, x_rem = x[:n], x[n:]
         y, y_rem = y[:n], y[n:]
 
-        x = x.reshape(-1, self.batch_size, x.shape[1])
-        y = y.reshape(-1, self.batch_size, y.shape[1])
+        x = x.reshape(-1, self.batch_size, W, x.shape[-1])
+        y = y.reshape(-1, self.batch_size, W, y.shape[-1])
 
         kwargs = {"dtype": torch.float32, "device": self.device}
 
@@ -84,7 +108,9 @@ class DataLoader:
 
 
 if __name__ == "__main__":
+
     d = DataLoader()
+
     for x, y in d.iter("train"):
         print(x.shape, y.shape)
         break

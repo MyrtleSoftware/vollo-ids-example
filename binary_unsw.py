@@ -19,10 +19,10 @@ def eval(model, iter):
 
     for x, y in iter:
 
-        pred = model(x[:, :, None])
+        pred = model(x)
 
         pred = pred > 0.5
-        target = y[:, :1] > 0.5
+        target = y[:, :, :1] > 0.5
 
         tp += (pred & target).sum().item()
         fp += (pred & ~target).sum().item()
@@ -66,14 +66,18 @@ optimizer = torch.optim.Adam(model.parameters())
 loader = DataLoader(device=device)
 
 
-for i in range(2):
-    for x, y in (t := tqdm(loader.iter("train"), leave=False)):
+for i in range(10):
+    for x, y in (
+        t := tqdm(loader.iter("train"), leave=False, total=loader.len("train"))
+    ):
 
         optimizer.zero_grad()
 
-        logits = model(x[:, :, None])
+        logits = model(x)
         # The first column of y is attack/!attack
-        loss = torch.nn.functional.binary_cross_entropy(logits, y[:, :1])
+        y = y[:, :, :1]
+
+        loss = torch.nn.functional.binary_cross_entropy(logits, y)
 
         # print(loss.item())
 
@@ -87,10 +91,10 @@ for i in range(2):
     for k, v in eval(model, loader.iter("dev", drop_last=False)).items():
         print(f"\t{k}: {v}")
 
-    print("Test set:")
+print("Test set:")
 
-    for k, v in eval(model, loader.iter("test", drop_last=False)).items():
-        print(f"\t{k}: {v}")
+for k, v in eval(model, loader.iter("test", drop_last=False)).items():
+    print(f"\t{k}: {v}")
 
 
 # Save the model
