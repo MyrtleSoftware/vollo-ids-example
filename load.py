@@ -52,9 +52,19 @@ def load(dir: str = "build/"):
 
 class DataLoader:
     def __init__(self, bath_size=1024, device="cuda"):
+
         self.X, self.Y = load()
+
         self.batch_size = bath_size
         self.device = device
+
+        # Normalize features to zero mean and unit variance
+
+        mean = self.X["train"].mean()
+        var = self.X["train"].var()
+
+        for k in self.X:
+            self.X[k] = (self.X[k] - mean) / (var + 1e-6) ** 0.5
 
     def iter(self, split, drop_last=True):
 

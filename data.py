@@ -84,13 +84,19 @@ print("Feature size:", len(df.columns) - 2)
 
 print("Making splits...")
 
-# 70/10/20 splits in the time domain
+# Shuffle the rows
+
+# df = df.sample(frac=1).reset_index(drop=True)
+
+# 70/10/20 splits
+
+x, y = 7, 8
 
 n = len(df) // 10
 
-train = df[: 7 * n]
-dev = df[7 * n : 8 * n]
-test = df[8 * n :]
+train = df[: x * n]
+dev = df[x * n : y * n]
+test = df[y * n :]
 
 print("\nTrain")
 print(train["Attack_type"].value_counts())

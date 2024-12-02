@@ -13,38 +13,35 @@ class ResFFN(nn.Module):
     def __init__(self, n: int):
         super().__init__()
 
-        self.lin = nn.Linear(n, 2 * n)
-        self.relu = nn.ReLU()
-        self.lin2 = nn.Linear(2 * n, n)
+        self.net = nn.Sequential(
+            nn.Dropout(0.5),
+            nn.Linear(n, 2 * n),
+            nn.ReLU(),
+            nn.Linear(2 * n, n),
+        )
 
     def forward(self, x):
-
-        y = self.lin(x)
-        y = self.relu(y)
-        y = self.lin2(y)
-
-        return x + y
+        return x + self.net(x)
 
 
 class Net(nn.Module):
-    def __init__(self, input_size=95, hid: int = 128):
+    def __init__(self, input_size=95, hid: int = 2):
 
         super().__init__()
 
-        self.bn = nn.BatchNorm1d(input_size)
+        # self.bn = nn.BatchNorm1d(input_size)
 
         self.pre = nn.Sequential(
             nn.Linear(input_size, hid),
             ResFFN(hid),
             ResFFN(hid),
-            nn.Dropout(0.5),
             nn.Linear(hid, 1),
             nn.Sigmoid(),
         )
 
     def forward(self, x):
 
-        x = self.bn(x)
+        # x = self.bn(x)
 
         # X: [B, H, 1]
 

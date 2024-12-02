@@ -2,6 +2,7 @@ __pycache__/
 vollo/
 vollo-sdk-*/
 build/
+data/
 *.csv
 *.png
 *.pkl

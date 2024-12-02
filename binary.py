@@ -3,7 +3,11 @@ from load import DataLoader
 from tqdm import tqdm
 from model import Net
 
+# Set the pytorch seed for reproducibility
+# torch.manual_seed(3)
 
+
+@torch.no_grad()
 def eval(model, iter):
 
     model.eval()
@@ -62,7 +66,7 @@ optimizer = torch.optim.Adam(model.parameters())
 loader = DataLoader(device=device)
 
 
-for i in range(2):
+for i in range(5):
     for x, y in (t := tqdm(loader.iter("train"), leave=False)):
 
         optimizer.zero_grad()
@@ -83,11 +87,10 @@ for i in range(2):
     for k, v in eval(model, loader.iter("dev", drop_last=False)).items():
         print(f"\t{k}: {v}")
 
+    print("Test set:")
 
-print("Test set:")
-
-for k, v in eval(model, loader.iter("test", drop_last=False)).items():
-    print(f"\t{k}: {v}")
+    for k, v in eval(model, loader.iter("test", drop_last=False)).items():
+        print(f"\t{k}: {v}")
 
 
 # Save the model
