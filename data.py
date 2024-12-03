@@ -1,119 +1,167 @@
-import kagglehub
 import os
 import pandas as pd
-
 from sklearn.preprocessing import LabelEncoder
 
 
-print("Downloading dataset...")
+def monadic_int(s: str, base: int):
+    try:
+        return int(s, base=base)
+    except ValueError:
+        return None
 
-path = kagglehub.dataset_download(
-    "mohamedamineferrag/edgeiiotset-cyber-security-dataset-of-iot-iiot"
+
+def str_to_int(s: str):
+
+    if (result := monadic_int(s, 10)) is not None:
+        return result
+
+    if (result := monadic_int(s, 8)) is not None:
+        return result
+
+    if (result := monadic_int(s, 16)) is not None:
+        return result
+
+    return 0
+
+
+def extractor(t: str):
+    if t == "nominal":
+        return str
+    elif t == "integer" or t == "binary":
+        return str_to_int
+    elif t == "float":
+        return float
+    elif t == "timestamp":
+        return int
+    else:
+        raise ValueError(f"Unknown type: {t}")
+
+
+def short(s: str):
+
+    if len(s) > 50:
+        return f"{s[:50]}..."
+
+    return s
+
+
+# ====== Parse the datasets ======
+
+features = pd.read_csv("data/csv/NUSW-NB15_features.csv", low_memory=False)
+
+names = features["Name"]
+types = features["Type "]
+
+# Load the data, using the names as headers
+
+df = pd.concat(
+    [
+        pd.read_csv(
+            f"data/csv/UNSW-NB15_{i}.csv",
+            names=names,
+            converters={name: extractor(t.lower()) for name, t in zip(names, types)},
+        )
+        for i in range(1, 5)
+    ],
+    axis=0,
+    ignore_index=True,
 )
 
-print("Loading dataset...")
+# df = pd.read_csv(
+#     f"data/mini.csv",
+#     names=names,
+#     converters={name: extractor(t.lower()) for name, t in zip(names, types)},
+# )
 
-path = os.path.join(
-    path, "Edge-IIoTset dataset/Selected dataset for ML and DL/DNN-EdgeIIoT-dataset.csv"
-)
 
-df = pd.read_csv(path, low_memory=False)
+# Missing attack_cat == benign
+df["attack_cat"] = df["attack_cat"].fillna("None")
 
-print("Columns:")
-for col in df.columns:
-    print("\t", col)
 
-print("Encoding categorical features...")
+# Show the nan values
+if df.isna().sum().sum() > 0:
+    print("Warning: NaN values present")
 
-keys = [
-    "http.request.method",
-    "http.referer",
-    "http.request.version",
-    "dns.qry.name.len",
-    "mqtt.conack.flags",
-    "mqtt.protoname",
-    "mqtt.topic",
-]
+
+# Compare the requested and actual data types
+for name, act, req, desc in zip(names, df.dtypes, types, features["Description"]):
+    print(f"{name:<16} {req:>10} -> {str(act):<10} {short(desc)}")
+
+
+# ====== Reduce the number of protocols ======
+
+print("\nValue counts of categorical features:")
+for name, type in zip(names, types):
+    if type == "nominal":
+        print(f"{name}: {df[name].nunique()}")
+
+
+# Get the top k protocols
+top_protocols = df["proto"].value_counts().head(20).index
+
+
+# Replace the rest with "other"
+df.loc[~df["proto"].isin(top_protocols), "proto"] = "other"
+
+
+# ====== One-hot the categorical features ======
+
+# Encode the attack categories
+df["attack_cat"] = LabelEncoder().fit_transform(df["attack_cat"])
 
 enc = pd.DataFrame()
 
-for key in keys:
-    enc[key] = LabelEncoder().fit_transform(df[key])
+for name, type in zip(names, types):
+    if type == "nominal" and name != "attack_cat":
+        enc[name] = LabelEncoder().fit_transform(df[name])
 
-print("One-hot encoding...")
+print(f"\nOne-hot encoding: {[n for n in enc.columns]}")
 
 one_hot = pd.concat(
-    [pd.get_dummies(enc[key], prefix=key, dtype=float) for key in keys], axis=1
+    [pd.get_dummies(enc[col], prefix=col, dtype=int) for col in enc.columns], axis=1
 )
 
-df = df.drop(columns=keys)
-df = pd.concat([df, one_hot], axis=1)
+df = pd.concat([one_hot, df.drop(columns=enc.columns)], axis=1)
 
-print("Cleaning data...")
+# ====== Sort by time and drop ======
 
-# This sort is needed for later time-based splits
-df = df.sort_values("frame.time")
+# Stable sort preserves the order of equal elements
+df = df.sort_values(by=["Ltime", "Stime"], kind="mergesort")
 
-print("Dropping columns...")
+df = df.drop(columns=["Ltime", "Stime"])
 
-drop_columns = [
-    "frame.time",
-    "ip.src_host",
-    "ip.dst_host",
-    "arp.src.proto_ipv4",
-    "arp.dst.proto_ipv4",
-    "http.file_data",
-    "http.request.full_uri",
-    "icmp.transmit_timestamp",
-    "http.request.uri.query",
-    "tcp.options",
-    "tcp.payload",
-    "tcp.srcport",
-    "tcp.dstport",
-    "udp.port",
-    "mqtt.msg",
-]
+# ======
 
-df.drop(drop_columns, axis=1, inplace=True)
-df.dropna(axis=0, how="any", inplace=True)
-df.drop_duplicates(subset=None, keep="first", inplace=True)
+print(df)
 
-print(df["Attack_type"].value_counts())
-
-print("Feature size:", len(df.columns) - 2)
-
-print("Making splits...")
-
-# Shuffle the rows
-
-# df = df.sample(frac=1).reset_index(drop=True)
-
-# 70/10/20 splits
-
-x, y = 7, 8
+# Split into 80/10/10 train/dev/test splits
 
 n = len(df) // 10
 
-train = df[: x * n]
-dev = df[x * n : y * n]
-test = df[y * n :]
+train, dev, test = (
+    df[: 8 * n],
+    df[8 * n : 9 * n],
+    df[9 * n :],
+)
 
-print("\nTrain")
-print(train["Attack_type"].value_counts())
-print("\nDev")
-print(dev["Attack_type"].value_counts())
-print("\nTest")
-print(test["Attack_type"].value_counts())
+print("Train:", train.shape)
+print(train["attack_cat"].value_counts())
 
-print("Saving splits...")
+print("Dev:", dev.shape)
+print(dev["attack_cat"].value_counts())
 
-if not os.path.exists("build"):
-    os.makedirs("build")
+print("Test:", test.shape)
+print(test["attack_cat"].value_counts())
 
-train.to_csv("build/train.csv", index=False)
-dev.to_csv("build/dev.csv", index=False)
-test.to_csv("build/test.csv", index=False)
+# Save the data
+os.makedirs("data/processed", exist_ok=True)
 
-train.to_pickle("build/train.pkl")
-dev.to_pickle("build/dev.pkl")
-test.to_pickle("build/test.pkl")
+train.to_csv("data/processed/train.csv", index=False)
+dev.to_csv("data/processed/dev.csv", index=False)
+test.to_csv("data/processed/test.csv", index=False)
+
+# Save as binary
+
+train.to_feather("data/processed/train.feather")
+dev.to_feather("data/processed/dev.feather")
+test.to_feather("data/processed/test.feather")

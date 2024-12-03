@@ -1,138 +1,122 @@
-from sklearn.feature_selection import SelectKBest, chi2
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import classification_report
-from sklearn.metrics import confusion_matrix
+import torch
+from loader import DataLoader
+from tqdm import tqdm
+from model import Net
+import copy
 
-import pandas as pd
-import numpy as np
-import time
+"""
+Time series analysis on the UNSW-NB15 dataset:
+    Deep Learning for Intrusion Detection Systems (IDSs) in Time Series Data
+"""
 
-
-from keras.models import Sequential
-from keras.layers import Dense, Dropout, Conv1D, MaxPooling1D, Flatten, LSTM, GRU, Input
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.utils import plot_model
-
-import tensorflow as tf
-
-# ================================
+# Set the pytorch seed for reproducibility
+torch.manual_seed(42)
 
 
-print("Loading dataset...")
-
-keys = ["train", "val", "test"]
-
-splits = {k: pd.read_csv(f"{k}.csv", low_memory=False) for k in keys}
-
-print("Pre-process dataset...")
-
-attacks = {
-    "Normal": 0,
-    "MITM": 1,
-    "Uploading": 2,
-    "Ransomware": 3,
-    "SQL_injection": 4,
-    "DDoS_HTTP": 5,
-    "DDoS_TCP": 6,
-    "Password": 7,
-    "Port_Scanning": 8,
-    "Vulnerability_scanner": 9,
-    "Backdoor": 10,
-    "XSS": 11,
-    "Fingerprinting": 12,
-    "DDoS_UDP": 13,
-    "DDoS_ICMP": 14,
-}
-
-X = {}
-Y = {}
-
-for k in keys:
-    splits[k]["Attack_type"] = splits[k]["Attack_type"].map(attacks)
-    X[k] = splits[k].drop(columns=["Attack_label", "Attack_type"])
-    Y[k] = splits[k]["Attack_label"]
+@torch.no_grad()
+def update_ema(model, ema_model, alpha=0.999):
+    for p, ema_p in zip(model.parameters(), ema_model.parameters()):
+        ema_p.set_(alpha * ema_p.data + (1 - alpha) * p.data)
 
 
-for k, v in X.items():
-    print(k, v.shape)
+@torch.no_grad()
+def eval(model, iter, eps=1e-6):
 
-print("Building model...")
+    model.eval()
 
+    tp = 0
+    fp = 0
+    tn = 0
+    fn = 0
 
-def cnn_lstm_gru_model(input_shape, num_classes):
+    for x, y in iter:
 
-    model = Sequential(
-        [
-            Input(shape=input_shape),
-            Conv1D(
-                filters=32, kernel_size=3, activation="relu", strides=2, use_bias=False
-            ),
-            Conv1D(
-                filters=64, kernel_size=3, activation="relu", strides=2, use_bias=False
-            ),
-            LSTM(64, return_sequences=True),
-            LSTM(64, return_sequences=False),
-            Flatten(),
-            Dense(128, activation="relu"),
-            Dropout(0.5),
-            Dense(num_classes, activation="sigmoid"),
-        ]
-    )
+        pred = model(x)
 
-    model.compile(
-        optimizer="adam",
-        loss="binary_crossentropy",
-        metrics=[
-            "Accuracy",
-            "FalseNegatives",
-            "TrueNegatives",
-            "FalsePositives",
-            "TruePositives",
-        ],
-    )
+        pred = pred > 0.5
+        target = y[:, :, :1] > 0.5
 
-    return model
+        tp += (pred & target).sum().item()
+        fp += (pred & ~target).sum().item()
+        tn += (~pred & ~target).sum().item()
+        fn += (~pred & target).sum().item()
 
+    accuracy = (tp + tn) / (tp + tn + fp + fn + eps)
+    precision = tp / (tp + fp + eps)
+    recall = tp / (tp + fn + eps)
+    f1 = 2 * (precision * recall) / (precision + recall + eps)
 
-input_shape = (X["train"].shape[1], 1)
-num_classes = 1
-model = cnn_lstm_gru_model(input_shape, num_classes)
-model.summary()
-# plot_model(model)
+    t = tp + fp + tn + fn + eps
 
-print(X["train"])
+    model.train()
 
-# Train the model
-history = model.fit(
-    X["train"],
-    Y["train"],
-    validation_data=(X["val"], Y["val"]),
-    epochs=2,
-    batch_size=1024,
-)
+    return {
+        "Accuracy": accuracy,
+        "Precision": precision,
+        "Recall": recall,
+        "F1-score": f1,
+        "Confusion-matrix": [[tp / t, fp / t], [fn / t, tn / t]],
+    }
 
 
-# Record the starting time for testing
-test_start_time = time.time()
-# Evaluate the model
-loss, accuracy, fn, tn, fp, tp = model.evaluate(X["test"], Y["test"], batch_size=128)
-# Record the ending time for testing
-test_end_time = time.time()
+# =================
 
-print(f"Test Loss: {loss:.5f}")
+device = "cuda" if torch.cuda.is_available() else "cpu"
 
-print(f"Test Accuracy: {accuracy:.5f}")
+# =================
 
-print(f"False Negatives: {fn:.5f}")
-print(f"True Negatives: {tn:.5f}")
-print(f"False Positives: {fp:.5f}")
-print(f"True Positives: {tp:.5f}")
+model = Net(input_size=180)
+ema_model = copy.deepcopy(model)
 
-precision = tp / (tp + fp)
-recall = tp / (tp + fn)
-f1 = 2 * (precision * recall) / (precision + recall)
+print(f"Parameters: {sum(p.numel() for p in model.parameters())//1000}k")
 
-print(f"Precision: {precision:.5f}")
-print(f"Recall: {recall:.5f}")
-print(f"F1 Score: {f1:.5f}")
+_, prog, vollo_stats = model.compile()
+
+print(f"{vollo_stats=}")
+
+print(model)
+
+model = model.to(device)
+ema_model = ema_model.to(device)
+
+# =================
+
+optimizer = torch.optim.AdamW(model.parameters())
+
+# =================
+
+loader = DataLoader(device=device)
+
+for i in range(10):
+    for x, y in (
+        t := tqdm(loader.iter("train"), leave=False, total=loader.len("train"))
+    ):
+        optimizer.zero_grad()
+
+        probs = model(x)
+        # The first column of y is attack/!attack
+        y = y[:, :, :1]
+
+        loss = torch.nn.functional.binary_cross_entropy(probs, y)
+
+        loss.backward()
+        optimizer.step()
+
+        t.set_description(f"Loss: {loss.item():.4f}")
+
+        update_ema(model, ema_model)
+
+    for p in optimizer.param_groups:
+        p["lr"] = max(1e-5, p["lr"] * 0.9)
+
+    print(f"Dev set - epoch {i}:")
+    for k, v in eval(ema_model, loader.iter("dev", drop_last=False)).items():
+        print(f"\t{k}: {v}")
+
+print("Test set:")
+for k, v in eval(ema_model, loader.iter("test", drop_last=False)).items():
+    print(f"\t{k}: {v}")
+
+
+# Save the model
+torch.save(model.state_dict(), "build/model.pt")
