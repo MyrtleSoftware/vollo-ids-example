@@ -48,7 +48,7 @@ Run the data preparation script:
 python data.py
 ```
 
-This will take a few minutes and leave its output in `/data/processed`.
+This will take a few minutes and leave its output in `data/processed`.
 
 ### 4. Train the model
 
@@ -57,6 +57,8 @@ Run the training script:
 ```
 python train.py
 ```
+
+This will take several minutes and save the final model in `build/`.
 
 ## Results
 
