@@ -19,7 +19,7 @@ def eval(model, iter, eps=1e-6):
 
     for x, y in iter:
 
-        pred, _ = model(x)
+        pred = model(x)
 
         pred = pred > 0.5
         target = y[:, :, :1] > 0.5
@@ -34,7 +34,7 @@ def eval(model, iter, eps=1e-6):
     recall = tp / (tp + fn + eps)
     f1 = 2 * (precision * recall) / (precision + recall + eps)
 
-    t = max(min(tp, tn, fp, fn), 1)
+    t = tp + fp + tn + fn + eps
 
     model.train()
 
@@ -73,7 +73,7 @@ for i in range(10):
 
         optimizer.zero_grad()
 
-        logits, _ = model(x)
+        logits = model(x)
         # The first column of y is attack/!attack
         y = y[:, :, :1]
 
@@ -97,9 +97,8 @@ for i in range(10):
 print("Test set:")
 
 
-for w in [1, 10, 50, 100, 500, 1000, 10000]:
-    for k, v in eval(model, loader.iter("test", drop_last=False, W=w)).items():
-        print(f"\t{w:>4}: {k}: {v}")
+for k, v in eval(model, loader.iter("test", drop_last=False)).items():
+    print(f"\t{k}: {v}")
 
 
 # Save the model

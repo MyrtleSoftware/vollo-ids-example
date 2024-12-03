@@ -38,7 +38,7 @@ def must_norm(col):
 
 
 class DataLoader:
-    def __init__(self, batch_size=64, device="cuda", W=100):
+    def __init__(self, batch_size=32, device="cuda", W=100):
 
         self.data = load()
         self.batch_size = batch_size
