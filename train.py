@@ -3,14 +3,12 @@ from loader import DataLoader
 from tqdm import tqdm
 from model import Net
 import copy
+import os
 
 """
 Time series analysis on the UNSW-NB15 dataset:
     Deep Learning for Intrusion Detection Systems (IDSs) in Time Series Data
 """
-
-# Set the pytorch seed for reproducibility
-torch.manual_seed(42)
 
 
 @torch.no_grad()
@@ -58,6 +56,9 @@ def eval(model, iter, eps=1e-6):
         "Confusion-matrix": [[tp / t, fp / t], [fn / t, tn / t]],
     }
 
+
+# Set the pytorch seed for reproducibility
+torch.manual_seed(42)
 
 # =================
 
@@ -119,4 +120,7 @@ for k, v in eval(ema_model, loader.iter("test", drop_last=False)).items():
 
 
 # Save the model
+
+os.makedirs("build", exist_ok=True)
+
 torch.save(model.state_dict(), "build/model.pt")

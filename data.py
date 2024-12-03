@@ -67,12 +67,6 @@ df = pd.concat(
     ignore_index=True,
 )
 
-# df = pd.read_csv(
-#     f"data/mini.csv",
-#     names=names,
-#     converters={name: extractor(t.lower()) for name, t in zip(names, types)},
-# )
-
 
 # Missing attack_cat == benign
 df["attack_cat"] = df["attack_cat"].fillna("None")
