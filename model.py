@@ -52,7 +52,13 @@ class Net(nn.Module):
         Returns:
             r: [B, T, 1] on interval [0, 1]
         """
-        return self.post(x).clamp(0, 1)
+
+        x = self.post(x)
+
+        if self.training:
+            return torch.sigmoid(x)
+
+        return torch.where(x > 0, 1, 0)
 
     @eval
     def compile(self, config=vollo_compiler.Config.ia_420f_c6b32()):
