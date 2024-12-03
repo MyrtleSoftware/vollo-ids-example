@@ -82,18 +82,3 @@ class Net(nn.Module):
         }
 
         return nnir, program, stats
-
-
-if __name__ == "__main__":
-
-    model = Net(180)
-
-    print("Parameters:", sum(p.numel() for p in model.parameters()) // 1000, "k")
-
-    print(model)
-
-    _, prog, stats = model.compile()
-
-    print(stats)
-
-    print(prog.metrics())

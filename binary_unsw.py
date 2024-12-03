@@ -51,11 +51,11 @@ def eval(model, iter, eps=1e-6):
     model.train()
 
     return {
-        "accuracy": accuracy,
-        "precision": precision,
-        "recall": recall,
-        "F1": f1,
-        "confusion_matrix": [[tp / t, fp / t], [fn / t, tn / t]],
+        "Accuracy": accuracy,
+        "Precision": precision,
+        "Recall": recall,
+        "F1-score": f1,
+        "Confusion-matrix": [[tp / t, fp / t], [fn / t, tn / t]],
     }
 
 
@@ -91,7 +91,6 @@ for i in range(10):
     for x, y in (
         t := tqdm(loader.iter("train"), leave=False, total=loader.len("train"))
     ):
-
         optimizer.zero_grad()
 
         probs = model(x)
