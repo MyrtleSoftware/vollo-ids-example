@@ -48,43 +48,37 @@ class Net(nn.Module):
 
         dummy = torch.randn(1, 1, self.input_size)
 
-        # Trace the model's execution to annotate it with activation shapes
-        (model, expected_output) = vollo_torch.fx.prepare_shape(self, dummy)
+        # Trace
+        model, _ = vollo_torch.fx.prepare_shape(self, dummy)
 
-        # Provide the streaming transform with index of the sequence axis
-
-        nnir = vollo_torch.fx.nnir.to_nnir(model)
-
-        nnir, output_axis = nnir.streaming_transform(1)
-
-        import vollo_compiler
-
-        config = vollo_compiler.Config.ia_420f_c6b32()
-
-        program = nnir.to_program(config)
+        nnir, _ = vollo_torch.fx.nnir.to_nnir(model).streaming_transform(1)
 
         # Restore mode
         self.train(mode)
 
-        return program
+        return nnir, dummy[:, 0, :]
 
 
 if __name__ == "__main__":
 
     model = Net(180)
 
+    print("Parameters:", sum(p.numel() for p in model.parameters()) // 1000, "k")
+
     print(model)
 
-    program = model.compile()
+    nnir, dummy_input = model.compile()
+
+    import vollo_compiler
+
+    config = vollo_compiler.Config.ia_420f_c6b32()
+
+    program = nnir.to_program(config)
 
     print(program.metrics())
 
+    vm = program.to_vm()
+    vm_output = vm.run(dummy_input.detach().numpy())
 
-# import torch
-
-# # from model import Net
-
-
-# model = Net()
-
-# model.eval()
+    print("cycle count:", vm.cycle_count())
+    print(f"latency (compute): {vm.compute_duration_us():.1f}us")
