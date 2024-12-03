@@ -33,7 +33,7 @@ source vollo-venv/bin/activate
 pip install --upgrade pip
 ```
 
-Install the vollo sdk, follow the instructions [here](https://vollo.myrtle.ai/latest/installation.html), this should create a `vollo-sdk-<version>` folder. 
+Install the vollo sdk, follow the instructions [here](https://vollo.myrtle.ai/latest/installation.html), this should create a `vollo-sdk-<version>` folder. Now you can install the python dependencies:
 
 ```sh
 pip install -r requirements.txt
@@ -60,7 +60,7 @@ python train.py
 
 ## Results
 
-After training the model achieves the following results on the test set:
+After training our model achieved the following results on the test set:
 
 | Metric    | Value  |
 |-----------|--------|
@@ -70,6 +70,8 @@ After training the model achieves the following results on the test set:
 | F1-score  | 96.9%  |
 
 For comparison the literature baseline is an F1-score ~ 90%[^1]
+
+The total latency of the model on an ?? FPGA is ??us (currently est compute is 0.6us)
 
 
 
