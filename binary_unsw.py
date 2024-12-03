@@ -53,9 +53,17 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 
 # =================
 
-model = Net(input_size=180).to(device)
+model = Net(input_size=180)
+
 print(f"Parameters: {sum(p.numel() for p in model.parameters())//1000}k")
+
+_, prog, vollo_stats = model.compile()
+
+print(f"{vollo_stats=}")
+
 print(model)
+
+model = model.to(device)
 
 # =================
 

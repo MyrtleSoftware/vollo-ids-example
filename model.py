@@ -1,8 +1,22 @@
 import torch
 import vollo_torch
+import vollo_compiler
 
 from torch import nn
 from vollo_torch import nn as vv
+
+
+def eval(fn):
+
+    @torch.no_grad()
+    def inner(self, *args, **kwargs):
+        was_training = self.training
+        self.eval()
+        out = fn(self, *args, **kwargs)
+        self.train(was_training)
+        return out
+
+    return inner
 
 
 class Net(nn.Module):
@@ -40,23 +54,28 @@ class Net(nn.Module):
         """
         return self.post(x).clamp(0, 1)
 
-    def compile(self):
-
-        # Cache mode
-        mode = self.training
-        self.eval()
+    @eval
+    def compile(self, config=vollo_compiler.Config.ia_420f_c6b32()):
 
         dummy = torch.randn(1, 1, self.input_size)
 
-        # Trace
         model, _ = vollo_torch.fx.prepare_shape(self, dummy)
 
         nnir, _ = vollo_torch.fx.nnir.to_nnir(model).streaming_transform(1)
 
-        # Restore mode
-        self.train(mode)
+        program = nnir.to_program(config)
 
-        return nnir, dummy[:, 0, :]
+        vm = program.to_vm()
+
+        # The streaming transform removes the time-dimension
+        vm.run(dummy[:, 0, :].detach().numpy())
+
+        stats = {
+            "cycle_count": vm.cycle_count(),
+            "compute_latency/us": vm.compute_duration_us(),
+        }
+
+        return nnir, program, stats
 
 
 if __name__ == "__main__":
@@ -67,18 +86,8 @@ if __name__ == "__main__":
 
     print(model)
 
-    nnir, dummy_input = model.compile()
+    _, prog, stats = model.compile()
 
-    import vollo_compiler
+    print(stats)
 
-    config = vollo_compiler.Config.ia_420f_c6b32()
-
-    program = nnir.to_program(config)
-
-    print(program.metrics())
-
-    vm = program.to_vm()
-    vm_output = vm.run(dummy_input.detach().numpy())
-
-    print("cycle count:", vm.cycle_count())
-    print(f"latency (compute): {vm.compute_duration_us():.1f}us")
+    print(prog.metrics())
