@@ -1,8 +1,8 @@
 # Vollo security example
 
-This repo demonstrates training a deep-learning network intrusion detection system (IDS) that can be run on an FPGA using the vollo compiler.
+This repo demonstrates training a deep-learning intrusion detection system (IDS) that can be run on an FPGA using the Vollo compiler.
 
-We will train a binary classifier to determine if a network flow-feature is ordinary traffic or an attack. We follow Ref[^1] and train a time series model on the UNSW-NB15 dataset.
+We will train a binary classifier to determine if a network flow-feature is ordinary traffic or an attack. We follow Ref[^1] and train a time series model on the UNSW-NB15 dataset. In deployment it makes sense to train on lower-level packet features however, this requires more train-time compute not suitable for an example. 
 
 [^1]: [Deep Learning for Intrusion Detection Systems (IDSs) in Time Series Data](https://www.mdpi.com/1999-5903/16/3/73)
 
@@ -12,7 +12,7 @@ Work through the following from the top level of this repo.
 
 ### 1. Get the dataset
 
-Download the csv folder from the UNSW-NB15 dataset available [here](https://research.unsw.edu.au/projects/unsw-nb15-dataset). Unzip/extract to `data/csv`, the result of `ls data/csv` should look something include:
+Download the csv folder from the UNSW-NB15 dataset available [here](https://research.unsw.edu.au/projects/unsw-nb15-dataset). Unzip/extract to `data/csv`, the result of `ls data/csv` should include something like:
 
 ```
 NUSW-NB15_features.csv   
@@ -23,7 +23,7 @@ UNSW-NB15_4.csv
 ...      
 ```
 
-### 2. Virtual environment and Vollo  
+### 2. Virtual and Vollo environments  
 
 Set up a virtual environment:
 
@@ -33,7 +33,7 @@ source vollo-venv/bin/activate
 pip install --upgrade pip
 ```
 
-Install the vollo sdk, follow the instructions [here](https://vollo.myrtle.ai/latest/installation.html), this should create a `vollo-sdk-<version>` folder. Now you can install the python dependencies:
+Install the Vollo SDK, follow the instructions [here](https://vollo.myrtle.ai/latest/installation.html), this should create a `vollo-sdk-<version>` folder. Now you can install the python dependencies:
 
 ```sh
 pip install -r requirements.txt
@@ -73,7 +73,7 @@ After training our model achieved the following results on the test set:
 
 For comparison the literature baseline is an F1-score ~ 90%[^1]
 
-The total latency of the model on an ?? FPGA is ??us (currently est compute is 0.6us)
+The total latency of the model on an ?? FPGA is ??us (currently est compute is 211 cycles, 0.6us)
 
 
 
