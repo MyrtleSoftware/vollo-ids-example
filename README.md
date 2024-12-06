@@ -58,7 +58,7 @@ Run the training script:
 python train.py
 ```
 
-This will take several minutes and save the final model in `build/`.
+This will take several minutes and save the final model in `build/`. In the default configuration the model should have ~ 100k parameters.
 
 ## Results
 
@@ -73,9 +73,11 @@ After training our model achieved the following results on the test set:
 
 For comparison the literature baseline is an F1-score ~ 90%[^1]
 
-The total latency of the model on an ?? FPGA is ??us (currently est compute is 211 cycles, 0.6us)
+Using a Vollo accelerator with 6 cores and block size 32 the latency statistics are:
 
-
-
-
+| Statistic | Time/us  |
+|-----------|----------|
+| Mean      | 2.365895 |
+| Median    | 2.338000 |
+| P99       | 2.570000 |
 
