@@ -61,7 +61,11 @@ class Net(nn.Module):
         return torch.where(x > 0, 1, 0)
 
     @eval
-    def compile(self, config=vollo_compiler.Config.ia_420f_c6b32()):
+    def compile(self, num_cores=1, block_size=16):
+
+        config = vollo_compiler.Config.ip_core(
+            num_cores=num_cores, block_size=block_size
+        )
 
         dummy = torch.randn(1, 1, self.input_size)
 
