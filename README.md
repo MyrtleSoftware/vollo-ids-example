@@ -71,13 +71,12 @@ After training our model achieved the following results on the test set:
 | Recall    | 98.4%  |
 | F1-score  | 96.9%  |
 
-For comparison the literature baseline is an F1-score ~ 90%[^1]
+For comparison the literature baseline is an F1-score ~ 90%[^1].
 
-Using a Vollo accelerator with 6 cores and block size 32 the latency statistics are:
+Using a Vollo accelerator the latency statistics are:
 
-| Statistic | Time/us  |
-|-----------|----------|
-| Mean      | 2.365895 |
-| Median    | 2.338000 |
-| P99       | 2.570000 |
-
+| Cores | Block size | Mean (us) | Median (us) | P99 (us) |   
+|-------|------------|-----------|-------------|----------|
+| 1     |       16   |  3.10     |    3.15     |     3.30 |
+| 1     |       32   |  2.37     |    2.34     |     2.70 |
+ 
