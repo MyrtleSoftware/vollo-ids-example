@@ -62,7 +62,7 @@ This will take several minutes and save the final model in `build/`. In the defa
 
 ## Results
 
-After training our model achieved the following results on the test set:
+After training our model achieved the following results on the test set in PyTorch:
 
 | Metric    | Value  |
 |-----------|--------|
@@ -72,6 +72,15 @@ After training our model achieved the following results on the test set:
 | F1-score  | 96.9%  |
 
 For comparison the literature baseline is an F1-score ~ 90%[^1].
+
+Running the model on a Vollo accelerator did not diminish the test results:
+
+| Metric    | Value  |
+|-----------|--------|
+| Accuracy  | 98.8%  |
+| Precision | 95.6%  |
+| Recall    | 98.4%  |
+| F1-score  | 97.0%  |
 
 Using a Vollo accelerator the latency statistics are:
 
