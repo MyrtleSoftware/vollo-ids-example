@@ -60,6 +60,9 @@ def eval(model, iter, orig_device, run_on_vollo=RunOnVollo.NO_VOLLO, eps=1e-6):
         model = model.cpu()
         _, prog, _ = model.compile()
 
+        # Will only be used if using the Vollo VM
+        vm = prog.to_vm()
+
         iter = (
             itertools.islice(iter, 1) if run_on_vollo == RunOnVollo.VOLLO_VM else iter
         )
@@ -71,22 +74,25 @@ def eval(model, iter, orig_device, run_on_vollo=RunOnVollo.NO_VOLLO, eps=1e-6):
             pred = []
 
             for batch_ix in range(x.size(0)):
-                # Create a new Vollo context for each stream in the batch so that state
-                # is not being reused
-                with vollo_rt.VolloRTContext() as ctx:
-                    if run_on_vollo == RunOnVollo.VOLLO_VM:
-                        ctx.add_vm(0, True)
-                    else:
+                if run_on_vollo == RunOnVollo.VOLLO_VM:
+                    stream = x[batch_ix : batch_ix + 1].numpy()
+                    pred.append(torch.from_numpy(vm.run_timesteps(stream, 1, 1)))
+
+                # Run on accelerator
+                else:
+                    # Create a new Vollo context for each stream in the batch so that state
+                    # is not being reused
+                    with vollo_rt.VolloRTContext() as ctx:
                         ctx.add_accelerator(0)
-                    ctx.load_program(prog)
+                        ctx.load_program(prog)
 
-                    seq_pred = []
-                    for timestep_ix in range(x.size(1)):
-                        elem = x[batch_ix : batch_ix + 1, timestep_ix, :]
-                        seq_pred.append(ctx.run(elem))
-                    seq_pred = torch.stack(seq_pred, axis=1)
+                        seq_pred = []
+                        for timestep_ix in range(x.size(1)):
+                            elem = x[batch_ix : batch_ix + 1, timestep_ix, :]
+                            seq_pred.append(ctx.run(elem.detach()))
+                        seq_pred = torch.stack(seq_pred, axis=1)
 
-                pred.append(seq_pred)
+                    pred.append(seq_pred)
 
             pred = torch.cat(
                 pred,
