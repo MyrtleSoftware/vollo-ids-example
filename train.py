@@ -1,6 +1,7 @@
 import copy
 import os
 
+import numpy as np
 import torch
 from tqdm import tqdm
 
@@ -20,8 +21,9 @@ def update_ema(model, ema_model, alpha=0.999):
         ema_p.set_(alpha * ema_p.data + (1 - alpha) * p.data)
 
 
-# Set the pytorch seed for reproducibility
+# Set random seeds for reproducibility
 torch.manual_seed(42)
+np.random.seed(42)
 
 # =================
 
