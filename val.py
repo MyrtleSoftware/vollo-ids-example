@@ -1,6 +1,7 @@
 from enum import Enum
 import itertools
 
+import numpy as np
 import torch
 
 import vollo_compiler
@@ -135,6 +136,9 @@ if __name__ == "__main__":
         run_on_vollo = RunOnVollo.VOLLO_VM
     elif args.vollo:
         run_on_vollo = RunOnVollo.VOLLO_ACCELERATOR
+
+    torch.manual_seed(42)
+    np.random.seed(42)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
