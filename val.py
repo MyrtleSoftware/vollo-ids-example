@@ -92,7 +92,7 @@ def eval(model, iter, orig_device, run_on_vollo=RunOnVollo.NO_VOLLO, eps=1e-6):
                         seq_pred = []
                         for timestep_ix in range(x.size(1)):
                             elem = x[batch_ix : batch_ix + 1, timestep_ix, :]
-                            seq_pred.append(ctx.run(elem.detach()))
+                            seq_pred.append(ctx.run(elem.contiguous()))
                         seq_pred = torch.stack(seq_pred, axis=1)
 
                     pred.append(seq_pred)
