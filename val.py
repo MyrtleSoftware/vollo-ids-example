@@ -63,6 +63,7 @@ def eval(model, iter, orig_device, run_on_vollo=RunOnVollo.NO_VOLLO, eps=1e-6):
         # Will only be used if using the Vollo VM
         vm = prog.to_vm()
 
+        # Only use a single batch for the VM or else it will take a long time
         iter = (
             itertools.islice(iter, 1) if run_on_vollo == RunOnVollo.VOLLO_VM else iter
         )
