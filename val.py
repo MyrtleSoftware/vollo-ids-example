@@ -5,7 +5,6 @@ import numpy as np
 import torch
 
 import vollo_compiler
-import vollo_rt
 import vollo_torch
 
 from model import Net
@@ -81,6 +80,9 @@ def eval(model, iter, orig_device, run_on_vollo=RunOnVollo.NO_VOLLO, eps=1e-6):
 
                 # Run on accelerator
                 else:
+                    # Conditionally import vollo_rt so as to not require vollo_rt.so if we're not using it
+                    import vollo_rt
+
                     # Create a new Vollo context for each stream in the batch so that state
                     # is not being reused
                     with vollo_rt.VolloRTContext() as ctx:
