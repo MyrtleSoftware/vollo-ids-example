@@ -6,3 +6,4 @@ data/
 *.csv
 *.png
 *.pkl
+vollo-venv/
