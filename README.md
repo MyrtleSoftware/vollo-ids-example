@@ -1,6 +1,6 @@
 # Vollo IDS example
 
-This repo demonstrates training a deep-learning intrusion detection system (IDS) that can be run on an FPGA using the Vollo compiler.
+This repo demonstrates training a deep-learning intrusion detection system (IDS) that can be run on an FPGA using the [Vollo](https://vollo.myrtle.ai) compiler.
 
 We will train a binary classifier to determine if a network flow-feature is ordinary traffic or an attack. We follow Ref[^1] and train a time series model on the UNSW-NB15 dataset. In deployment it makes sense to train on lower-level packet features however, this requires more train-time compute not suitable for an example. 
 
