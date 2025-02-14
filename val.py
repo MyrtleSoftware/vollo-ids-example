@@ -149,7 +149,9 @@ if __name__ == "__main__":
     loader = DataLoader(device=device)
 
     model = Net(input_size=180)
-    model.load_state_dict(torch.load("build/model.pt", weights_only=True, map_location=device))
+    model.load_state_dict(
+        torch.load("build/model.pt", weights_only=True, map_location=device)
+    )
     model = model.to(device)
 
     print("Test set:")
