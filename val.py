@@ -60,9 +60,6 @@ def eval(model, iter, orig_device, run_on_vollo=RunOnVollo.NO_VOLLO, eps=1e-6):
         model = model.cpu()
         _, prog, _ = model.compile()
 
-        # Will only be used if using the Vollo VM
-        vm = prog.to_vm()
-
         # Only use a single batch for the VM or else it will take a long time
         iter = (
             itertools.islice(iter, 1) if run_on_vollo == RunOnVollo.VOLLO_VM else iter
@@ -76,6 +73,10 @@ def eval(model, iter, orig_device, run_on_vollo=RunOnVollo.NO_VOLLO, eps=1e-6):
 
             for batch_ix in range(x.size(0)):
                 if run_on_vollo == RunOnVollo.VOLLO_VM:
+                    # Create a new VM for each stream in the batch so that state is not
+                    # is not being reused
+                    vm = prog.to_vm()
+
                     stream = x[batch_ix : batch_ix + 1].numpy()
                     pred.append(torch.from_numpy(vm.run_timesteps(stream, 1, 1)))
 
