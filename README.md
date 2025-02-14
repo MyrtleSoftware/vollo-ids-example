@@ -62,16 +62,37 @@ This will take several minutes and save the final model in `build/`. In the defa
 
 ## Results
 
-After training our model achieved the following results on the test set:
+After training our model, we evaluate it on the test set by running:
+
+```
+python val.py
+```
+
+The model achieved the following results in PyTorch:
 
 | Metric    | Value  |
 |-----------|--------|
 | Accuracy  | 98.9%  |
 | Precision | 95.4%  |
-| Recall    | 98.4%  |
-| F1-score  | 96.9%  |
+| Recall    | 98.6%  |
+| F1-score  | 97.0%  |
 
-For comparison the literature baseline is an F1-score ~ 90%[^1].
+Note that our results are not directly comparable with those of [^1] since we have trained our model to classify an input window, rather than to classify/predict a forthcoming window following the input window.
+
+You can also run the model in the Vollo VM to check that the results are not negatively affected by Vollo's quantization:
+
+```
+python val.py --vollo-vm
+```
+
+By default this runs on a small subset of the test set as it will take a long time to run it on the whole test set.
+
+If you have set up a Vollo accelerator with a license, you can run the model on it. You will first need to source the `setup.sh` from the Vollo SDK to set your `LD_LIBRARY_PATH` environment variable so that you can use the Vollo runtime library (`vollo_rt`):
+
+```sh
+source vollo-sdk-*/setup.sh
+python val.py --vollo
+```
 
 Using a Vollo accelerator the latency statistics are:
 

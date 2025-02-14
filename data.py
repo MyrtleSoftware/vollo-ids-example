@@ -47,7 +47,9 @@ def short(s: str):
 
 # ====== Parse the datasets ======
 
-features = pd.read_csv("data/csv/NUSW-NB15_features.csv", low_memory=False)
+features = pd.read_csv(
+    "data/csv/NUSW-NB15_features.csv", low_memory=False, encoding="latin_1"
+)
 
 names = features["Name"]
 types = features["Type "]

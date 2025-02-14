@@ -1,9 +1,13 @@
-import torch
-from loader import DataLoader
-from tqdm import tqdm
-from model import Net
 import copy
 import os
+
+import numpy as np
+import torch
+from tqdm import tqdm
+
+from model import Net
+from loader import DataLoader
+from val import eval
 
 """
 Time series analysis on the UNSW-NB15 dataset:
@@ -17,48 +21,9 @@ def update_ema(model, ema_model, alpha=0.999):
         ema_p.set_(alpha * ema_p.data + (1 - alpha) * p.data)
 
 
-@torch.no_grad()
-def eval(model, iter, eps=1e-6):
-
-    model.eval()
-
-    tp = 0
-    fp = 0
-    tn = 0
-    fn = 0
-
-    for x, y in iter:
-
-        pred = model(x)
-
-        pred = pred > 0.5
-        target = y[:, :, :1] > 0.5
-
-        tp += (pred & target).sum().item()
-        fp += (pred & ~target).sum().item()
-        tn += (~pred & ~target).sum().item()
-        fn += (~pred & target).sum().item()
-
-    accuracy = (tp + tn) / (tp + tn + fp + fn + eps)
-    precision = tp / (tp + fp + eps)
-    recall = tp / (tp + fn + eps)
-    f1 = 2 * (precision * recall) / (precision + recall + eps)
-
-    t = tp + fp + tn + fn + eps
-
-    model.train()
-
-    return {
-        "Accuracy": accuracy,
-        "Precision": precision,
-        "Recall": recall,
-        "F1-score": f1,
-        "Confusion-matrix": [[tp / t, fp / t], [fn / t, tn / t]],
-    }
-
-
-# Set the pytorch seed for reproducibility
+# Set random seeds for reproducibility
 torch.manual_seed(42)
+np.random.seed(42)
 
 # =================
 
@@ -111,11 +76,11 @@ for i in range(10):
         p["lr"] = max(1e-5, p["lr"] * 0.9)
 
     print(f"Dev set - epoch {i}:")
-    for k, v in eval(ema_model, loader.iter("dev", drop_last=False)).items():
+    for k, v in eval(ema_model, loader.iter("dev", drop_last=False), device).items():
         print(f"\t{k}: {v}")
 
 print("Test set:")
-for k, v in eval(ema_model, loader.iter("test", drop_last=False)).items():
+for k, v in eval(ema_model, loader.iter("test", drop_last=False), device).items():
     print(f"\t{k}: {v}")
 
 
