@@ -1,4 +1,4 @@
-# Vollo security example
+# Vollo IDS example
 
 This repo demonstrates training a deep-learning intrusion detection system (IDS) that can be run on an FPGA using the Vollo compiler.
 
